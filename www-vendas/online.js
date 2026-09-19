@@ -130,6 +130,25 @@
             });
         });
     }
+    function iniciarSimulador(empId) {
+        const sim = window.SKLSimulador;
+        if (!sim) return;
+        const atualizarBotoes = () => {
+            const visivel = sim.ativo() && sim.condicoes().length > 0;
+            [ "simLotButton", "simUnitButton" ].forEach(id => { if ($(id)) $(id).hidden = !visivel; });
+        };
+        if (!iniciarSimulador.ligado) { iniciarSimulador.ligado = true; sim.onEstado(atualizarBotoes); }
+        atualizarBotoes();
+        sim.init({ sb, empreendimentoId: empId, papel: "corretor", toast: (m) => window.SKLApp?.showToast?.(m) }).then(atualizarBotoes).catch(() => {});
+    }
+    function alvoSimulacaoAtual() {
+        return requestContext && requestContext.sim ? requestContext.sim : null;
+    }
+    function prepararBlocoSimulacao(sim) {
+        if (!window.SKLSimulador || !$("requestSimBloco")) return;
+        requestContext.sim = sim;
+        window.SKLSimulador.montarBlocoReserva($("requestSimBloco"), alvoSimulacaoAtual);
+    }
     function entrarNoEmpreendimento(emp) {
         window.SKLApp?.resetMapa3D?.();
         window.SKLApp?.resetFormasPagamento?.();
@@ -138,6 +157,7 @@
         try {
             localStorage.setItem(EMPREENDIMENTO_ESCOLHIDO_KEY, emp.id);
         } catch {}
+        iniciarSimulador(emp.id);
         if (emp.tipo === "vertical") enterVerticalApp(); else enterApp();
     }
     async function resolverEmpreendimentoEEntrar() {
@@ -419,6 +439,16 @@
         }, () => carregarEstadoReservas()).subscribe();
         setTimeout(carregarEstadoReservas, 0);
     });
+    $("simLotButton").addEventListener("click", () => {
+        const lot = window.SKLApp.getSelectedLot();
+        if (!lot) return window.SKLApp.showToast("Selecione um lote primeiro.");
+        window.SKLSimulador.abrir({ valor: lot.record.valor, rotulo: `Quadra ${lot.quadra} · Lote ${lot.lote}`, permiteUsar: false });
+    });
+    $("simUnitButton").addEventListener("click", () => {
+        const unit = window.SKLVertical.getSelectedUnit();
+        if (!unit) return;
+        window.SKLSimulador.abrir({ valor: unit.valor, rotulo: `Apto ${unit.numero}`, permiteUsar: false });
+    });
     $("requestLotButton").addEventListener("click", () => {
         const lot = window.SKLApp.getSelectedLot();
         if (!lot) return window.SKLApp.showToast("Selecione um lote primeiro.");
@@ -431,6 +461,7 @@
             lotKey: lot.lot_key
         };
         $("requestLotTitle").textContent = `Quadra ${lot.quadra} · Lote ${lot.lote}`;
+        prepararBlocoSimulacao({ valor: lot.record.valor, rotulo: `Quadra ${lot.quadra} · Lote ${lot.lote}`, alvo: { tipo: "lote", id: lot.lot_key } });
         prepararTiposDoPedido(estadoDoAlvo("lote", lot.lot_key));
         setMessage($("requestMessage"), "");
         popularFormasPagamento();
@@ -447,6 +478,7 @@
             id: unit.id
         };
         $("requestLotTitle").textContent = `Apto ${unit.numero}`;
+        prepararBlocoSimulacao({ valor: unit.valor, rotulo: `Apto ${unit.numero}`, alvo: { tipo: "unidade", id: unit.id } });
         prepararTiposDoPedido(estUn);
         setMessage($("requestMessage"), "");
         popularFormasPagamento();
@@ -472,7 +504,8 @@
                 p_cliente_email: $("requestEmailInput").value,
                 p_cliente_endereco: $("requestAddressInput").value,
                 p_forma_pagamento_id: formaPagamentoId,
-                p_forma_pagamento_nome: formaPagamentoNome
+                p_forma_pagamento_nome: formaPagamentoNome,
+                p_simulacao: (window.SKLSimulador && alvoSimulacaoAtual() && window.SKLSimulador.escolhida(alvoSimulacaoAtual().alvo)) || null
             };
             if (requestContext.kind === "lote") {
                 const {data: loteRow, error: loteError} = await sb.from("lotes").select("id").eq("empreendimento_id", empreendimentoId).eq("chave", requestContext.lotKey).single();
@@ -493,6 +526,7 @@
                 input.value = "";
             });
             if (paymentSelect) paymentSelect.selectedIndex = 0;
+            if (window.SKLSimulador && alvoSimulacaoAtual()) window.SKLSimulador.limparEscolhida(alvoSimulacaoAtual().alvo);
             requestDialog.close();
             window.SKLApp.showToast("Solicitação enviada à Central de Vendas.");
         } catch (error) {

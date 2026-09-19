@@ -704,3 +704,5 @@ summary { color: var(--navy); cursor: pointer; font-weight: 850; }
 .reserva-reservado{background:#dff4e8;color:#1d5c3a;border:1px solid #a8dcbe}
 .reserva-bloqueado{background:#f7e3e1;color:#8c3a33;border:1px solid #e6b8b3}
 .request-button[hidden],.unit-action-btn[hidden]{display:none!important}
+.unit-action-wide{grid-column:1/-1;flex-direction:row;justify-content:center;gap:10px;text-align:left}
+#simLotButton{margin-top:0}

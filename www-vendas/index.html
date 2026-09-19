@@ -167,6 +167,7 @@
             <button id="memorialButton" class="secondary-button" type="button">Memorial PDF</button>
             <button id="detailsButton" class="secondary-button" type="button">Medidas e divisas</button>
             <button id="paymentInfoButton" class="secondary-button" type="button" hidden>Formas de pagamento</button>
+            <button id="simLotButton" class="secondary-button" type="button" hidden>Simular financiamento</button>
             <button id="requestLotButton" class="request-button" type="button">Solicitar reserva ou indicar venda</button>
             <button id="shareCardButton" class="share-card-button" type="button">Compartilhar ficha comercial</button>
           </div>
@@ -291,6 +292,7 @@
             <button id="unitRequestButton" class="unit-action-btn unit-action-primary" type="button"><span class="unit-action-icon">📅</span><span><strong>Reservar</strong><small>Garanta este apartamento</small></span></button>
             <button id="unitShareButton2" class="unit-action-btn" type="button"><span class="unit-action-icon">🔗</span><span><strong>Compartilhar</strong><small>Envie para alguém</small></span></button>
             <button id="unitPlantExpandButton2" class="unit-action-btn" type="button"><span class="unit-action-icon">▦</span><span><strong>Abrir planta</strong><small>Ver em detalhes</small></span></button>
+            <button id="simUnitButton" class="unit-action-btn unit-action-wide" type="button" hidden><span class="unit-action-icon">🧮</span><span><strong>Simular financiamento</strong><small>Parcela, entrada e prazo</small></span></button>
           </div>
 
           <p class="unit-footer-tag" id="unitFooterTag"></p>
@@ -410,6 +412,7 @@
         <label><span>CPF do cliente, se disponível</span><input id="requestCpfInput" inputmode="numeric" placeholder="000.000.000-00" /></label>
         <label><span>E-mail do cliente, se disponível</span><input id="requestEmailInput" type="email" placeholder="cliente@email.com" /></label>
         <label><span>Endereço do cliente, se disponível</span><input id="requestAddressInput" placeholder="Rua, número, bairro, cidade" /></label>
+        <div id="requestSimBloco" hidden></div>
         <label><span>Forma de pagamento</span><select id="requestPaymentPlanInput"><option value="">Nenhuma forma cadastrada ainda</option></select></label>
         <label><span>Descrição ou observação</span><textarea id="requestNoteInput" rows="4"></textarea></label>
         <button id="submitRequestButton" class="primary-button full-width" type="button">Enviar solicitação</button>
@@ -479,6 +482,7 @@
     <script src="data/status-config.js"></script>
     <script src="app.js"></script>
     <script src="vertical.js"></script>
+    <script src="simulador.js"></script>
     <script src="online.js"></script>
       <script src="../trocar-linha.js" defer></script>
   </body>
