@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' file: data: blob:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://xigwlofqkmiibzbongkn.supabase.co wss://xigwlofqkmiibzbongkn.supabase.co; font-src 'self' data:;" />
+  <title>SKL Aluguéis — Central</title>
+  <meta name="theme-color" content="#06202f" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="SKL Corretor" />
+  <link rel="manifest" href="../manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="../assets/icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" href="../assets/icons/icon-192.png" />
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <section id="loginView" class="login-view">
+    <div class="login-brand"><img src="logo.png" alt="SKL Soluções Digitais" /></div>
+    <form id="loginForm" class="login-card">
+      <span class="eyebrow">SKL ALUGUÉIS</span>
+      <h1>Acesso ao sistema</h1>
+      <p>Entre com sua conta autorizada para administrar as construções.</p>
+      <label><span>E-mail</span><input id="emailInput" type="email" autocomplete="username" required /></label>
+      <label><span>Senha</span><input id="passwordInput" type="password" autocomplete="current-password" required /></label>
+      <button class="primary-button" type="submit">Entrar</button>
+      <div id="loginMessage" class="form-message" hidden></div>
+    </form>
+    <p class="login-footer">SKL SOLUÇÕES DIGITAIS — CONTROLE DE ALUGUÉIS</p>
+  </section>
+
+  <section id="carteiraPicker" class="login-view" hidden>
+    <div class="login-card picker-card">
+      <span class="eyebrow">SELECIONE UMA CARTEIRA</span>
+      <h1>Onde você quer trabalhar agora?</h1>
+      <p>Sua conta tem acesso a mais de uma carteira de imóveis. Escolha uma para continuar.</p>
+      <div id="carteiraPickerList" class="empreendimento-list"></div>
+    </div>
+  </section>
+
+  <section id="appView" class="app-view" hidden>
+    <aside class="sidebar">
+      <div class="sidebar-brand"><img src="logo.png" alt="SKL" /><span>Aluguéis</span></div>
+      <nav id="mainNav">
+        <button class="nav-button active" data-page="dashboard"><span>◫</span> Visão geral</button>
+        <button class="nav-button" data-page="construcoes"><span>⌂</span> Imóveis</button>
+        <button class="nav-button" id="navInteresses" data-page="interesses"><span>☎</span> Interesses</button>
+        <button class="nav-button" id="navCorretores" data-page="corretores"><span>◔</span> Corretores</button>
+        <button class="nav-button" id="navComissoes" data-page="comissoes"><span>%</span> Comissões</button>
+        <button class="nav-button" data-page="settings"><span>⚙</span> Configurações</button>
+      </nav>
+      <div class="sidebar-user"><strong id="currentUserName">Usuário</strong><span id="currentUserRole">—</span><button id="logoutButton">Sair</button></div>
+    </aside>
+
+    <main class="workspace">
+      <header class="topbar">
+        <div><span class="eyebrow">SKL SOLUÇÕES DIGITAIS</span><h1 id="pageTitle">Visão geral</h1></div>
+        <div class="connection-area">
+          <button id="topbarSwitchCarteiraButton" type="button" class="secondary-button">Trocar carteira</button>
+          <span id="syncTime">Ainda não sincronizado</span><span id="connectionBadge" class="connection-badge offline">Desconectado</span>
+        </div>
+      </header>
+
+      <section id="page-dashboard" class="page active-page">
+        <div class="metric-grid">
+          <button class="metric-card status-disponivel" data-status="disponivel"><span>Disponíveis</span><strong id="metricDisponivel">0</strong></button>
+          <button class="metric-card status-alugado" data-status="alugado"><span>Alugados</span><strong id="metricAlugado">0</strong></button>
+          <button class="metric-card status-reservado" data-status="reservado"><span>Reservados</span><strong id="metricReservado">0</strong></button>
+          <button class="metric-card status-indisponivel" data-status="indisponivel"><span>Indisponíveis</span><strong id="metricIndisponivel">0</strong></button>
+        </div>
+        <div class="dashboard-grid">
+          <article class="panel"><div class="panel-heading"><div><span class="eyebrow">CARTEIRA</span><h2 id="dashboardCarteiraNome">—</h2></div><button class="text-button" data-go="construcoes">Ver imóveis</button></div><div id="dashboardRecentes" class="compact-list"></div></article>
+        </div>
+      </section>
+
+      <section id="page-construcoes" class="page">
+        <div class="toolbar">
+          <input id="construcaoSearchInput" type="search" placeholder="Pesquisar por nome ou endereço" />
+          <select id="construcaoStatusFilter">
+            <option value="">Todas as situações</option>
+            <option value="disponivel">Disponível</option>
+            <option value="alugado">Alugado</option>
+            <option value="reservado">Reservado</option>
+            <option value="indisponivel">Indisponível</option>
+          </select>
+          <button id="toggleConstrucaoViewButton" class="secondary-button">Alternar mapa/lista</button>
+          <button id="newConstrucaoButton" class="primary-button">Novo imóvel</button>
+        </div>
+        <div id="construcaoMapPanel" class="map-panel" hidden><div id="construcaoMap"></div><div class="map-legend"><span class="dot disponivel"></span>Disponível <span class="dot alugado"></span>Alugado <span class="dot reservado"></span>Reservado <span class="dot indisponivel"></span>Indisponível</div></div>
+        <div id="construcaoGrid" class="construcao-grid"></div>
+        <div id="construcaoGridEmpty" class="empty-state" hidden>Nenhum imóvel cadastrado ainda.</div>
+      </section>
+
+      <section id="page-interesses" class="page">
+        <p class="muted-text" style="margin:0 0 14px">Interesses de aluguel registrados pelos corretores, com a ficha de contato do cliente.</p>
+        <div class="panel table-panel">
+          <table><thead><tr><th>Imóvel</th><th>Cliente</th><th>Telefone</th><th>CPF</th><th>E-mail</th><th>Observação</th><th>Data</th><th>Situação</th></tr></thead><tbody id="interessesTableBody"></tbody></table>
+          <div id="interessesTableEmpty" class="empty-state" hidden>Nenhum interesse registrado ainda.</div>
+        </div>
+      </section>
+
+      <section id="page-corretores" class="page">
+        <div class="page-actions">
+          <p>Crie convites ou acessos diretos para corretores e funcionários da central de aluguéis. Se a pessoa já tiver conta em outra base SKL (venda, por exemplo) com o mesmo e-mail, ela só ganha acesso a esta carteira também — continua entrando com a senha que já usa.</p>
+          <div style="display:flex;gap:10px">
+            <button id="newInviteAluguelButton" class="primary-button">Novo convite</button>
+            <button id="newDirectUserAluguelButton" class="secondary-button">Criar acesso direto (com prazo)</button>
+          </div>
+        </div>
+        <div class="panel table-panel">
+          <table><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>% Comissão</th><th>Situação</th><th>Ações</th></tr></thead><tbody id="corretorTableBody"></tbody></table>
+        </div>
+        <article class="panel">
+          <div class="panel-heading"><h2>Convites aguardando ativação</h2></div>
+          <div id="inviteAluguelList" class="invite-list"></div>
+        </article>
+      </section>
+
+      <section id="page-comissoes" class="page">
+        <div class="page-actions">
+          <p>Controle de comissão por aluguel fechado. Cada corretor só enxerga a própria comissão.</p>
+          <button id="newComissaoAluguelButton" class="primary-button">Registrar comissão</button>
+        </div>
+        <div class="panel table-panel">
+          <table><thead><tr><th>Corretor</th><th>Valor do aluguel</th><th>%</th><th>Comissão</th><th>Situação</th><th>Ações</th></tr></thead><tbody id="comissaoAluguelTableBody"></tbody></table>
+          <div id="comissaoAluguelTableEmpty" class="empty-state" hidden>Nenhuma comissão registrada.</div>
+        </div>
+      </section>
+
+      <section id="page-settings" class="page">
+        <div class="settings-grid">
+          <form id="passwordForm" class="panel form-panel"><span class="eyebrow">SEGURANÇA</span><h2>Alterar minha senha</h2><label><span>Nova senha</span><input id="changedPasswordInput" type="password" required minlength="6" /></label><button class="primary-button">Alterar senha</button></form>
+          <div class="panel form-panel"><span class="eyebrow">CARTEIRA</span><h2 id="settingsCarteiraNome">—</h2><button id="switchCarteiraButton" type="button" class="secondary-button full-width">Trocar carteira</button></div>
+          <div class="panel form-panel"><span class="eyebrow">SOBRE</span><h2>Versão instalada</h2><p id="appVersionText">—</p></div>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <dialog id="construcaoDialog">
+    <form method="dialog" class="dialog-card construcao-dialog-card">
+      <button class="dialog-close" type="button" value="cancel">×</button>
+
+      <div id="imovelHero" class="imovel-hero">
+        <img id="imovelHeroImg" src="" alt="Foto do imóvel" hidden />
+        <div id="imovelHeroEmpty" class="imovel-hero-empty">Sem fotos ainda</div>
+        <button id="heroPrevButton" class="hero-nav hero-nav-prev" type="button" aria-label="Foto anterior" hidden>‹</button>
+        <button id="heroNextButton" class="hero-nav hero-nav-next" type="button" aria-label="Próxima foto" hidden>›</button>
+        <span id="imovelHeroContador" class="imovel-hero-contador" hidden>1/1</span>
+        <span id="imovelHeroStatus" class="status-pill imovel-hero-status">—</span>
+      </div>
+      <div class="imovel-hero-toolbar">
+        <div id="construcaoFotosGrid" class="fotos-strip"></div>
+        <label class="secondary-button foto-add-button">+ Fotos<input id="construcaoFotosInput" type="file" accept="image/*" multiple hidden /></label>
+      </div>
+
+      <span class="eyebrow">IMÓVEL</span>
+      <h2 id="construcaoDialogTitle">Novo imóvel</h2>
+
+      <label><span>Nome</span><input id="construcaoNomeInput" placeholder="ex.: Casa Rua das Flores, 120" required /></label>
+      <div class="form-row">
+        <label><span>Tipo de imóvel</span>
+          <select id="construcaoTipoInput">
+            <option value="Casa">Casa</option>
+            <option value="Apartamento">Apartamento</option>
+            <option value="Kitnet/Studio">Kitnet/Studio</option>
+            <option value="Sala comercial">Sala comercial</option>
+            <option value="Galpão">Galpão</option>
+            <option value="Terreno">Terreno</option>
+            <option value="Outro">Outro</option>
+          </select>
+        </label>
+        <label><span>Situação</span>
+          <select id="construcaoStatusInput">
+            <option value="disponivel">Disponível</option>
+            <option value="alugado">Alugado</option>
+            <option value="reservado">Reservado</option>
+            <option value="indisponivel">Indisponível</option>
+          </select>
+        </label>
+      </div>
+      <div class="form-row">
+        <label><span>Endereço</span><input id="construcaoEnderecoInput" placeholder="Rua, número, bairro, cidade" /></label>
+        <label><span>Valor do aluguel</span><input id="construcaoValorInput" placeholder="R$ 0,00" /></label>
+      </div>
+      <label><span>Descrição</span><textarea id="construcaoDescricaoInput" rows="3" placeholder="Detalhes do imóvel: cômodos, área, diferenciais..."></textarea></label>
+
+      <details class="dialog-section coordenada-details">
+        <summary class="eyebrow">COORDENADA E MAPA ▾</summary>
+        <p class="muted-text" style="margin:8px 0 8px">Clique no mapa pra marcar a localização, ou cole abaixo um link do Google Maps do local.</p>
+        <label><span>Link do Google Maps (opcional)</span><input id="construcaoLinkMapaInput" placeholder="Cole aqui o link compartilhado do Google Maps" /></label>
+        <div id="construcaoLinkMapaMensagem" class="form-message" hidden style="margin:-4px 0 8px"></div>
+        <div id="construcaoPickerMap" class="picker-map"></div>
+        <div class="form-row" hidden>
+          <label><span>Latitude</span><input id="construcaoLatInput" type="number" step="0.000001" /></label>
+          <label><span>Longitude</span><input id="construcaoLngInput" type="number" step="0.000001" /></label>
+        </div>
+        <div class="mapa-links-row">
+          <a id="googleMapsButton" class="secondary-button" href="#" target="_blank" rel="noopener" hidden>Ir pelo Google Maps</a>
+          <a id="appleMapsButton" class="secondary-button" href="#" target="_blank" rel="noopener" hidden>Abrir no Apple Maps</a>
+        </div>
+      </details>
+
+      <div class="dialog-actions">
+        <button id="deleteConstrucaoButton" type="button" class="danger-button" hidden>Excluir</button>
+        <button id="registrarInteresseButton" type="button" class="primary-button" hidden>Registrar interesse de aluguel</button>
+        <button id="saveConstrucaoButton" type="button" class="primary-button">Salvar imóvel</button>
+      </div>
+      <div id="construcaoDialogMessage" class="form-message" hidden></div>
+    </form>
+  </dialog>
+
+  <dialog id="interesseDialog">
+    <form method="dialog" class="dialog-card">
+      <button class="dialog-close" type="button" value="cancel">×</button>
+      <span class="eyebrow">INTERESSE DE ALUGUEL</span>
+      <h2>Registrar interesse do cliente</h2>
+      <p id="interesseImovelNome" class="muted-text" style="margin:-8px 0 0">—</p>
+      <p style="font-size:12px;color:var(--muted);margin:0">Aviso de privacidade: os dados do cliente informados abaixo são tratados conforme a Lei Geral de Proteção de Dados (LGPD, Lei nº 13.709/2018) e usados apenas para este atendimento.</p>
+      <label><span>Nome do cliente</span><input id="interesseNomeInput" required /></label>
+      <div class="form-row">
+        <label><span>Telefone do cliente</span><input id="interesseTelefoneInput" inputmode="tel" /></label>
+        <label><span>CPF do cliente, se disponível</span><input id="interesseCpfInput" inputmode="numeric" placeholder="000.000.000-00" /></label>
+      </div>
+      <label><span>E-mail do cliente, se disponível</span><input id="interesseEmailInput" type="email" placeholder="cliente@email.com" /></label>
+      <label><span>Endereço do cliente, se disponível</span><input id="interesseEnderecoInput" placeholder="Rua, número, bairro, cidade" /></label>
+      <label><span>Observação</span><textarea id="interesseObservacaoInput" rows="3"></textarea></label>
+      <button id="submitInteresseButton" type="button" class="primary-button full-width">Enviar interesse</button>
+      <div id="interesseDialogMessage" class="form-message" hidden></div>
+    </form>
+  </dialog>
+
+  <dialog id="deleteConstrucaoDialog">
+    <form method="dialog" class="dialog-card">
+      <button class="dialog-close" type="button" value="cancel">×</button>
+      <span class="eyebrow">EXCLUIR IMÓVEL</span>
+      <h2>Excluir <span id="deleteConstrucaoName">—</span>?</h2>
+      <p style="color:var(--muted);font-size:12px;margin:-8px 0 0">Isso remove o cadastro e as fotos para sempre — não é possível desfazer.</p>
+      <button id="confirmDeleteConstrucaoButton" type="button" class="danger-button">Excluir imóvel</button>
+    </form>
+  </dialog>
+
+  <dialog id="fotoLightbox" class="foto-lightbox">
+    <button id="fotoLightboxClose" class="close-button" type="button" aria-label="Fechar">×</button>
+    <button id="fotoLightboxPrev" class="hero-nav hero-nav-prev" type="button" aria-label="Foto anterior">‹</button>
+    <img id="fotoLightboxImg" src="" alt="Foto do imóvel" />
+    <button id="fotoLightboxNext" class="hero-nav hero-nav-next" type="button" aria-label="Próxima foto">›</button>
+    <span id="fotoLightboxContador" class="imovel-hero-contador"></span>
+  </dialog>
+
+  <dialog id="inviteAluguelDialog">
+    <form method="dialog" class="dialog-card">
+      <button class="dialog-close" type="button" value="cancel">×</button>
+      <span class="eyebrow">NOVO ACESSO</span>
+      <h2>Gerar convite</h2>
+      <label><span>Nome da pessoa</span><input id="inviteAluguelNameInput" required /></label>
+      <div class="form-row">
+        <label><span>Perfil</span>
+          <select id="inviteAluguelRoleInput">
+            <option value="corretor">Corretor</option>
+            <option value="central_vendas">Controle de aluguéis</option>
+            <option value="administrador">Administrador</option>
+          </select>
+        </label>
+        <label><span>% de comissão (opcional)</span><input id="inviteAluguelPercentualInput" type="number" step="0.01" min="0" max="100" placeholder="ex.: 10" /></label>
+      </div>
+      <button id="createInviteAluguelButton" type="button" class="primary-button">Gerar código</button>
+      <div id="inviteAluguelResult" class="invite-result" hidden></div>
+    </form>
+  </dialog>
+
+  <dialog id="directUserAluguelDialog">
+    <form method="dialog" class="dialog-card">
+      <button class="dialog-close" type="button" value="cancel">×</button>
+      <span class="eyebrow">ACESSO DIRETO</span>
+      <h2>Criar usuário já com senha</h2>
+      <p style="color:var(--muted);font-size:12px;margin:-8px 0 0">Cria o login pronto na hora. Se o e-mail já tiver conta em outra base SKL, a senha digitada é ignorada e só vinculamos o acesso a esta carteira.</p>
+      <label><span>Nome da pessoa</span><input id="directAluguelNameInput" required /></label>
+      <label><span>E-mail</span><input id="directAluguelEmailInput" type="email" required /></label>
+      <label><span>Senha</span><input id="directAluguelPasswordInput" type="text" minlength="6" required /></label>
+      <div class="form-row">
+        <label><span>Perfil</span>
+          <select id="directAluguelRoleInput">
+            <option value="corretor">Corretor</option>
+            <option value="central_vendas">Controle de aluguéis</option>
+            <option value="administrador">Administrador</option>
+          </select>
+        </label>
+        <label><span>% de comissão (opcional)</span><input id="directAluguelPercentualInput" type="number" step="0.01" min="0" max="100" placeholder="ex.: 10" /></label>
+      </div>
+      <label><span>Validade do acesso</span>
+        <select id="directAluguelExpiryInput">
+          <option value="">Sem validade (nunca expira)</option>
+          <option value="2">2 horas</option>
+          <option value="8">8 horas</option>
+          <option value="24">1 dia</option>
+          <option value="168">7 dias</option>
+          <option value="720">30 dias</option>
+        </select>
+      </label>
+      <button id="createDirectUserAluguelButton" type="button" class="primary-button">Criar acesso</button>
+      <div id="directUserAluguelMessage" class="form-message" hidden></div>
+    </form>
+  </dialog>
+
+  <dialog id="resetPasswordAluguelDialog">
+    <form method="dialog" class="dialog-card">
+      <button class="dialog-close" type="button" value="cancel">×</button>
+      <span class="eyebrow">REDEFINIR SENHA</span>
+      <h2>Nova senha temporária</h2>
+      <p style="color:var(--muted);font-size:12px;margin:-8px 0 0">Informe ao usuário para trocar assim que possível.</p>
+      <label><span>Nova senha (mínimo 6 caracteres)</span><input id="resetPasswordAluguelInput" type="text" minlength="6" required /></label>
+      <button id="confirmResetPasswordAluguelButton" type="button" class="primary-button">Redefinir senha</button>
+      <div id="resetPasswordAluguelMessage" class="form-message" hidden></div>
+    </form>
+  </dialog>
+
+  <dialog id="editPercentualDialog">
+    <form method="dialog" class="dialog-card">
+      <button class="dialog-close" type="button" value="cancel">×</button>
+      <span class="eyebrow">COMISSÃO DO CORRETOR</span>
+      <h2>Editar % de comissão</h2>
+      <p style="color:var(--muted);font-size:12px;margin:-8px 0 0">Esse percentual pode mudar conforme o combinado com a empresa contratante — vale só para esta carteira.</p>
+      <label><span>% de comissão</span><input id="editPercentualInput" type="number" step="0.01" min="0" max="100" placeholder="ex.: 10" /></label>
+      <button id="confirmEditPercentualButton" type="button" class="primary-button">Salvar percentual</button>
+      <div id="editPercentualMessage" class="form-message" hidden></div>
+    </form>
+  </dialog>
+
+  <dialog id="removeUserAluguelDialog">
+    <form method="dialog" class="dialog-card">
+      <button class="dialog-close" type="button" value="cancel">×</button>
+      <span class="eyebrow">REMOVER ACESSO</span>
+      <h2>Remover acesso de <span id="removeUserAluguelName">—</span>?</h2>
+      <p style="color:var(--muted);font-size:12px;margin:-8px 0 0">Isso remove o acesso a ESTA carteira de aluguéis. Se a pessoa tiver login de outra base/linha SKL (venda, outra carteira), esse outro acesso continua funcionando normalmente.</p>
+      <button id="confirmRemoveUserAluguelButton" type="button" class="danger-button">Remover acesso</button>
+      <div id="removeUserAluguelMessage" class="form-message" hidden></div>
+    </form>
+  </dialog>
+
+  <dialog id="comissaoAluguelDialog">
+    <form method="dialog" class="dialog-card">
+      <button class="dialog-close" type="button" value="cancel">×</button>
+      <span class="eyebrow">COMISSÃO</span>
+      <h2>Registrar comissão</h2>
+      <label><span>Corretor</span><select id="comissaoAluguelCorretorInput"></select></label>
+      <div class="form-row">
+        <label><span>Valor do aluguel</span><input id="comissaoAluguelValorInput" placeholder="R$ 0,00" /></label>
+        <label><span>Percentual (%)</span><input id="comissaoAluguelPercentualInput" type="number" step="0.01" placeholder="ex.: 10" /></label>
+      </div>
+      <label><span>Valor da comissão</span><input id="comissaoAluguelValorComissaoInput" placeholder="Calculado automaticamente, ou informe manualmente" /></label>
+      <label><span>Observação</span><textarea id="comissaoAluguelObservacaoInput" rows="2"></textarea></label>
+      <button id="saveComissaoAluguelButton" type="button" class="primary-button">Registrar</button>
+      <div id="comissaoAluguelMessage" class="form-message" hidden></div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script src="vendor/supabase/supabase.js"></script>
+  <script src="app.js"></script>
+  <script src="../trocar-linha.js" defer></script>
+</body>
+</html>

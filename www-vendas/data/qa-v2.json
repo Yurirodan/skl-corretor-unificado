@@ -1,0 +1,44 @@
+{
+  "version": 2,
+  "lots": 441,
+  "memorial_pdfs": 441,
+  "lots_with_memorial_access": 437,
+  "lots_without_named_street_access": [
+    "Q01-L03",
+    "Q20-L05",
+    "Q20-L14",
+    "Q23-L03"
+  ],
+  "lots_flagged_for_technical_review": [
+    "Q02-L15",
+    "Q04-L04",
+    "Q05-L13",
+    "Q10-L09",
+    "Q15-L10",
+    "Q17-L02",
+    "Q18-L20",
+    "Q18-L34",
+    "Q20-L19",
+    "Q23-L06",
+    "Q23-L12"
+  ],
+  "database_memorial_area_mismatches": [],
+  "source_validation_warnings": [
+    "Q10 L9: área memorial 311.00, KML [310.83]",
+    "Q15 L10: área memorial 394.95, KML [394.83]",
+    "Q17 L2: área memorial 200.08, KML [210.08]",
+    "Q18 L20: rótulo KML [18]",
+    "Q18 L34: área memorial 200.27, KML [200.4]",
+    "Q2 L15: área memorial 208.82, KML [206.82]",
+    "Q20 L19: sem polígono KML coincidente; geometria criada pelo memorial",
+    "Q23 L12: área memorial 203.28, KML [203.0]",
+    "Q23 L6: área memorial 252.35, KML [252.82]",
+    "Q4 L4: sem polígono KML coincidente; geometria criada pelo memorial",
+    "Q5 L13: área memorial 200.14, KML [210.14]"
+  ],
+  "notes": [
+    "A geometria continua baseada nos memoriais descritivos, em SIRGAS2000 / UTM 21S.",
+    "Os pontos de acesso são calculados no ponto médio ponderado dos segmentos confrontantes com vias públicas.",
+    "Q20-L19 possui confrontação com o próprio lote no memorial e permanece sinalizado para revisão."
+  ]
+}
