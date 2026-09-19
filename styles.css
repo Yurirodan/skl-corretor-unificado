@@ -200,3 +200,8 @@ html, body {
 .install-dialog::backdrop { background: rgba(6, 32, 47, 0.7); }
 .install-dialog h2 { margin: 0 0 10px; font-size: 20px; color: var(--navy); }
 .install-dialog p { color: #33434b; line-height: 1.55; margin: 0 0 18px; font-size: 14.5px; }
+
+/* rodapé centralizado e versão sem quebra; fundo da página igual ao da tela (sem faixa clara ao rolar) */
+html { background: var(--navy-deep); }
+.chooser-footer { text-align: center; }
+.appVersionText { white-space: nowrap; }
