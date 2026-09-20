@@ -4,7 +4,7 @@
 
     const SUPABASE_URL = "https://xigwlofqkmiibzbongkn.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_mqppAm9n79xl6rYafzXyNQ_mGVoX3Vd";
-    const APP_VERSION = "0.3.0-web";
+    const APP_VERSION = "0.3.1-web";
     document.querySelectorAll(".appVersionText").forEach(el => el.textContent = `v${APP_VERSION}`);
 
     const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -67,7 +67,7 @@
             .select("papel, expira_em, empreendimentos(ativo)")
             .eq("usuario_id", userData.user.id)
             .eq("papel", "corretor");
-        if (error) return false;
+        if (error) throw new Error("Não foi possível verificar seus acessos agora (o servidor está ocupado). Aguarde um instante e tente entrar de novo.");
         const agora = Date.now();
         return (data || []).some(v => v.empreendimentos?.ativo && (!v.expira_em || new Date(v.expira_em).getTime() >= agora));
     }
@@ -81,7 +81,7 @@
             .select("ativo, expira_em, carteiras_aluguel(ativo)")
             .eq("usuario_id", userData.user.id)
             .eq("ativo", true);
-        if (error) return false;
+        if (error) throw new Error("Não foi possível verificar seus acessos agora (o servidor está ocupado). Aguarde um instante e tente entrar de novo.");
         const agora = Date.now();
         return (data || []).some(v => v.carteiras_aluguel?.ativo && (!v.expira_em || new Date(v.expira_em).getTime() >= agora));
     }
@@ -89,7 +89,8 @@
     let acesso = { vendas: false, aluguel: false };
 
     async function detectarLinhasEEntrar() {
-        const [vendas, aluguel] = await Promise.all([temAcessoVendas(), temAcessoAluguel()]);
+        const limite = new Promise((_, rejeita) => setTimeout(() => rejeita(new Error("Não foi possível verificar seus acessos agora (o servidor está ocupado). Aguarde um instante e tente entrar de novo.")), 25000));
+        const [vendas, aluguel] = await Promise.race([Promise.all([temAcessoVendas(), temAcessoAluguel()]), limite]);
         acesso = { vendas, aluguel };
         // usado por trocar-linha.js (Vendas/Aluguéis) para só mostrar o atalho a quem tem as duas linhas
         try { localStorage.setItem("sklu_linhas", [vendas && "vendas", aluguel && "aluguel"].filter(Boolean).join(",")); } catch {}
@@ -134,4 +135,26 @@
     $("chooserLogoutButton").addEventListener("click", sair);
 
     restoreSession();
+})();
+
+// Botão "Mostrar/Ocultar" na senha do login (ajuda a conferir o que foi digitado).
+(function () {
+    const input = document.getElementById("loginPasswordInput");
+    if (!input || input.dataset.olho) return;
+    input.dataset.olho = "1";
+    const wrap = document.createElement("span");
+    wrap.className = "pw-wrap";
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+    const botao = document.createElement("button");
+    botao.type = "button";
+    botao.className = "pw-toggle";
+    botao.textContent = "Mostrar";
+    botao.setAttribute("aria-label", "Mostrar ou ocultar a senha");
+    botao.addEventListener("click", () => {
+        const oculta = input.type === "password";
+        input.type = oculta ? "text" : "password";
+        botao.textContent = oculta ? "Ocultar" : "Mostrar";
+    });
+    wrap.appendChild(botao);
 })();
